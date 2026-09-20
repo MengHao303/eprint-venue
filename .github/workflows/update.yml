@@ -1,0 +1,59 @@
+name: Refresh and deploy
+
+on:
+  schedule:
+    # 04:43 UTC daily (12:43 Singapore time)
+    - cron: "43 4 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch new and changed papers
+        # Reads the year listing (a handful of requests) and only re-fetches
+        # papers whose "Last updated" date moved. --max keeps a single run
+        # small if a backlog builds up; the rest is picked up the next day.
+        env:
+          EPRINT_UA: "eprint-extension/1.0 (+https://github.com/MengHao303/eprint-extension) daily metadata refresh"
+        run: python3 scrape.py 2026 --delay 1.5 --max 300
+
+      - name: Build the site
+        run: python3 build.py
+
+      - name: Commit refreshed metadata
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git diff --staged --quiet || git commit -m "data: refresh $(date -u +%F)"
+          git push
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

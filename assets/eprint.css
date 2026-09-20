@@ -1,0 +1,430 @@
+/***** THIS IS THE RIGHT CSS *****/
+
+/***** Big picture stuff: body, main divs, etc *****/
+body {
+  background: url(/img/shades6.svg) no-repeat center center fixed;
+  background-size: cover;
+  background-color: #FEFEFE;
+}
+
+/* the main div that surrounds all other content */
+#eprintContent {
+  margin-top: 3rem;
+  background-color: #FEFEFE;
+  border-radius: .3rem;
+}
+
+/* NOTE: yes this needs to be in a media query, otherwise nav on mobile
+is comically gigantic. also remember that #topNavbar and #topNavbar nav
+have to have matching heights to the margin-top given here */
+@media (min-width: 576px) {
+  #eprintContent {
+    margin-top: 6rem;
+  }
+}
+
+@media (min-width: 992px) {
+  #eprintContent {
+    margin-top: 10rem;
+  }
+}
+
+
+
+
+/***** Typography *****/
+.text-justify {
+  text-align: justify;
+  text-justify: inter-word;
+}
+
+.blockquote {
+  font-size: 0.9rem;
+}
+
+div#topNavbar .ePrintname {
+  font-size: 1.6rem;
+  transition: .4s;
+}
+
+@media (max-width: 991px) {
+  div#topNavbar a.ePrintname {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 767px) {
+  div#topNavbar a.ePrintname {
+    font-size: 1.4rem;
+  }
+}
+
+.eprintCardHeader h4 {
+  font-size: 2rem;
+}
+
+
+
+/***** Big picture stuff: elements that are widely used (e.g., <a>, .eprintCardHeader, etc) *****/
+a {
+  color: #0A36AE;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #BD367E;
+  /* text-decoration: underline; */
+}
+
+a:visited {
+  /* lighter option but not great contrast */
+  /* color: #9656B2; */
+  color: #66468e;
+}
+
+/* Keep the color of keywords unchanged */
+a.keyword:visited {
+  color: #fff;
+}
+
+/* necessary to keep button text from changing after visited */
+a.btn:visited {
+  color: #212529;
+}
+
+/* necessary to keep button text from going invisible on hover */
+a.btn:visited:hover {
+  color: #FEFEFE;
+}
+
+/* a.btn {
+  text-decoration: none;
+} */
+
+/* not best practice but keeps buttons from having bootstrappy outlines on interaction */
+.btn:focus, .btn:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+div.eprintCardHeader {
+  padding: 1rem 1rem;
+  text-align: center;
+  margin-left: 1rem;
+  margin-right: 1rem;
+  box-sizing: border-box;
+  /* TODO: do percentages in rem or something else, to make it look good on .xxl and .md */
+  background: linear-gradient(#fefefe, #fefefe), linear-gradient(to right, #fefefe 5%,
+    #102A83 5%, #0089cb 15%, #66468E 25%, #B0508F 45%, #E76680 55%, #FF8E6A 75%, #fefefe 95%);
+  border-bottom: 3px solid transparent;
+  border-radius: 14%;
+  background-repeat: no-repeat;
+  background-origin: padding-box, border-box;
+}
+
+div.eprintCardContent {
+  padding: 20px;
+  /* TODO: may need this later, to replace line under titles instead */
+  /* background-color: #F8F8F8;
+  border: #414141;
+  box-shadow: 0 0.06rem 0.125rem rgba(0, 0, 0, 0.2); */
+}
+
+div.eprintCard p {
+  margin-top: .5rem;
+  margin-bottom: .5rem;
+}
+
+/* TODO: check if used */
+#eprintContent .eprintCard ul, .dashList {
+  list-style-type: '-  ';
+}
+
+
+
+/***** Images & icons (includes on nav) *****/
+div#topNavbar img.iacrlogo {
+  max-height: 6rem;
+  transition: .4s;
+  border-radius: 50%;
+  box-shadow: 0px 0px 20px 0px rgba(255, 255, 255, .8);
+}
+
+/* TODO: remove on scroll? */
+div#topNavbar.scrolled img.iacrlogo {
+  max-height: 3rem;
+}
+
+img#iacrlogo {
+  max-height: 100px;
+  border-radius: 50%;
+  box-shadow: 0px 0px 20px 0px rgba(255, 255, 255, .8);
+}
+
+img.searchIcon {
+  height: 25px;
+  /* from https://codepen.io/sosuke/pen/Pjoqqp */
+  filter: invert(98%) sepia(98%) saturate(1%) hue-rotate(293deg) brightness(104%) contrast(99%);
+}
+
+.icon {
+  width: 1.2em;
+  height: 1.2em;
+  /* equivalent to bootstrap classes .mr-2 and .mb-1 */
+  margin-bottom: .25rem !important;
+  margin-right: .5rem !important;
+}
+
+.btn-outline-dark:hover .icon {
+  filter: invert(100%) sepia(0%) saturate(0%) hue-rotate(140deg) brightness(105%) contrast(102%);
+}
+
+.licenseImg {
+  max-width: 8rem;
+  max-height: 4rem;
+  margin-bottom: 0.25rem;
+}
+
+
+
+/***** Navigation *****/
+
+nav {
+  background-color: transparent;
+}
+
+/* DO NOT TOUCH; solves #79 */
+@media (min-width: 992px) {
+  nav div.container {
+    background-color: #0A60AF;
+  }
+}
+
+@media (max-width: 992px) {
+  nav {
+    background-color: #0A60AF;
+  }
+}
+
+div#topNavbar {
+  color: black;
+  transition: .4s;
+  font-size: 1.1rem;
+}
+
+@media (min-width: 576px) {
+  #topNavbar {
+    height: 6rem;
+  }
+}
+
+@media (min-width: 992px) {
+  #topNavbar {
+    height: 10rem;
+  }
+}
+
+div#topNavbar nav {
+  transition: .4s;
+}
+
+@media (min-width: 576px) {
+  #topNavbar nav {
+    height: 6rem;
+  }
+}
+
+@media (min-width: 992px) {
+  #topNavbar nav {
+    height: 10rem;
+  }
+}
+
+@media (min-width: 992px) {
+  div#topNavbar.scrolled {
+    height: 5rem;
+    background-color: #0A60AF;
+  }
+
+  div#topNavbar.scrolled nav {
+    height: 5rem;
+    background-color: #0A60AF;
+  }
+}
+
+/* editing bootstrap classes directly = the thrill of living dangerously */
+a.dropdown-item:active {
+  background-color: #70CCF9;
+}
+
+.ps-custom {
+  padding-left: 2rem !important;
+}
+
+.dropdown-menu {
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+}
+
+#searchDd {
+  width: 100vw;
+}
+
+@media (min-width: 576px) {
+  #searchDd {
+    width: 60vw;
+  }
+}
+
+@media (min-width: 768px) {
+  #searchDd {
+    width: 70vw;
+  }
+}
+
+@media (min-width: 992px) {
+  #searchDd {
+    width: 40vw;
+  }
+}
+
+@media (min-width: 1400px) {
+  #searchDd {
+    width: 30vw;
+  }
+}
+
+#navbarContent {
+  background-color: #0A60AF;
+}
+
+nav.navbar-custom .ePrintname, .navbar-custom a.nav-link {
+  color: #fefefe;
+}
+
+.btnNoOutline:focus,
+.btnNoOutline:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* hamburger bars in nav */
+.icon-bar {
+  color: #fefefe;
+  background-color: #fefefe;
+  width: 28px;
+  height: 2px;
+  display: block;
+  transition: all 0.3s;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+
+
+/***** Element: keywords & categories *****/
+a.keyword:hover {
+  color: #eeeeff;
+}
+
+.category {
+  font-weight: 400;
+  line-height: normal;
+}
+
+.category-APPLICATIONS {
+  background-color: rgba(248, 247, 114, 0.8);
+  color: #212529;
+}
+
+.category-PROTOCOLS {
+  background-color: rgba(255, 125, 107, 0.5);
+  color: #212529;
+}
+
+.category-FOUNDATIONS {
+  background-color: rgba(226, 86, 129, 0.4);
+  color: #212529;
+}
+
+.category-IMPLEMENTATION {
+  background-color: rgba(155, 47, 123, 0.4);
+  color: #212529;
+}
+
+.category-SECRETKEY {
+  background-color: rgba(81, 59, 143, 0.3);
+  color: #212529;
+}
+
+.category-PUBLICKEY {
+  background-color: rgba(89, 196, 249, 0.5);
+  color: #212529;
+}
+
+.category-ATTACKS {
+  background-color: rgba(0, 119, 203, 0.3);
+  color: #212529;
+}
+
+.category-uncategorized {
+  background-color: rgba(179, 187, 200, 0.5);
+  color: #212529;
+}
+
+
+
+/***** Page-specific: paper details *****/
+div.paperSummary {
+  padding: 1rem;
+}
+
+div.papertitle {
+  font-weight: bold;
+}
+
+div.paperauthors {
+  font-style: italic;
+  margin-left: 3em;
+  margin-bottom: 8px;
+}
+
+div.paperabstract {
+  margin-left: 3em;
+}
+
+a.abstract-open:hover, a.abstract-closed:hover {
+  cursor: pointer;
+}
+
+.orcidIcon {
+  width: 1.2em;
+  height: 1.2em;
+}
+
+
+/***** ¯\_(ツ)_/¯ *****/
+/* TODO: figure out what and why */
+.bi {
+  vertical-align: -.125em;
+  fill: currentColor;
+}
+
+/* for submit.html template */
+fieldset.form-section {
+  background-color: #f8f9fa;
+}
+
+
+
+/* TODO: trash the footer entirely, then remove */
+/***** Footer *****/
+#eprintFooter {
+  /* background-color: #f8f8f8;
+    padding: 20px; */
+  visibility: hidden;
+}
+
+/* page-specific for h3 # targets in operations.html */
+h3.scrolled {
+   scroll-margin-top: 13rem;
+}

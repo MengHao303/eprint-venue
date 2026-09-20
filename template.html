@@ -1,0 +1,448 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover">
+<title>All papers in __YEAR__</title>
+<style>
+__CSS__
+</style>
+<style>
+  /* from the year-listing page of eprint.iacr.org */
+  div.summaryauthors { font-style: italic; }
+  a.abstract-open:after { content: ' -'; font-weight: 800; }
+  a.abstract-closed:after { content: " \203A"; font-weight: 800; }
+  .paper-abstract {
+    max-height: 0;
+    overflow-y: hidden;
+    transition: max-height 0.2s ease-out;
+    white-space: pre-wrap;
+  }
+  /* the one thing this mirror adds to the listing */
+  div.pubinfo { line-height: 1.35; }
+  div.pubinfo .pubLabel { color: #6c757d; }
+  div.pubinfo .venue { font-weight: 600; }
+  div.pubinfo.pub-preprint { color: #6c757d; }
+  div.pubinfo.pub-iacr .venue { color: #0A60AF; }
+  div.pubinfo.pub-iacr_revision .venue { color: #8a5a00; }
+  div.pubinfo.pub-elsewhere .venue { color: #66468e; }
+  a.catfilter { cursor: pointer; }
+  #filterBar .form-select, #filterBar .form-control { font-size: .875rem; }
+  .mirrorNote { color: #6c757d; }
+  :root { color-scheme: light; }
+</style>
+
+<noscript>
+  <h1 class="text-center">What a lovely hat</h1>
+  <h4 class="text-center">Is it made out of <a href="https://iacr.org/tinfoil.html">tin foil</a>?</h4>
+</noscript>
+<div class="fixed-top" id="topNavbar">
+  <nav class="navbar navbar-custom navbar-expand-lg">
+    <div class="container px-0 justify-content-between justify-content-lg-evenly">
+      <div class="order-0 align-items-center d-flex">
+        <button class="navbar-toggler btnNoOutline" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false"
+                aria-label="Toggle navigation">
+          <span class="icon-bar top-bar"></span>
+          <span class="icon-bar middle-bar"></span>
+          <span class="icon-bar bottom-bar"></span>
+        </button>
+        <a class="d-none me-5 d-lg-inline" href="https://iacr.org/"><img class="iacrlogo" src="__LOGO__" alt="IACR Logo" style="max-width:6rem;"></a>
+      </div>
+      <a class="ePrintname order-1" href="https://eprint.iacr.org/">
+        <span class="longNavName">Cryptology ePrint Archive</span>
+      </a>
+      <div class="collapse navbar-collapse order-3" id="navbarContent">
+        <ul class="navbar-nav me-auto ms-2 mb-2 mb-lg-0 justify-content-end w-100">
+          <li class="ps-md-3 nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Papers</a>
+            <ul class="dropdown-menu me-3" aria-labelledby="navbarDropdown">
+              <span class="text-dark mx-3" style="white-space:nowrap;">Updates from the last:</span>
+              <li><a class="dropdown-item ps-custom" href="https://eprint.iacr.org/days/7">7 days</a></li>
+              <li><a class="dropdown-item ps-custom" href="https://eprint.iacr.org/days/31">31 days</a></li>
+              <li><a class="dropdown-item ps-custom" href="https://eprint.iacr.org/days/183">6 months</a></li>
+              <li><a class="dropdown-item ps-custom" href="https://eprint.iacr.org/days/365">365 days</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="https://eprint.iacr.org/byyear">Listing by year</a></li>
+              <li><a class="dropdown-item" href="https://eprint.iacr.org/complete">All papers</a></li>
+              <li><a class="dropdown-item" href="https://www.iacr.org/news/subscribe">Subscribe</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="https://eprint.iacr.org/citation.html">How to cite</a></li>
+            </ul>
+          </li>
+          <li class="ps-md-3 nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="submissionsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Submissions</a>
+            <ul class="dropdown-menu me-3" aria-labelledby="submissionsDropdown">
+              <li><a class="dropdown-item" href="https://eprint.iacr.org/submit">Submit a paper</a></li>
+              <li><a class="dropdown-item" href="https://eprint.iacr.org/revise">Revise or withdraw a paper</a></li>
+              <li><a class="dropdown-item" href="https://eprint.iacr.org/operations.html">Acceptance and publishing conditions</a></li>
+            </ul>
+          </li>
+          <li class="ps-md-3 nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="aboutDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">About</a>
+            <ul class="dropdown-menu me-3" aria-labelledby="aboutDropdown">
+              <li><a class="dropdown-item" href="https://eprint.iacr.org/about.html">Goals and history</a></li>
+              <li><a class="dropdown-item" href="https://eprint.iacr.org/news.html">News</a></li>
+              <li><a class="dropdown-item" href="https://eprint.iacr.org/stats">Statistics</a></li>
+              <li><a class="dropdown-item" href="https://eprint.iacr.org/contact.html">Contact</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+      <div class="dropdown ps-md-2 text-right order-2 order-lg-last">
+        <button class="btn btnNoOutline" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+          <img src="__SEARCHICON__" class="searchIcon" alt="Search Button">
+        </button>
+        <div id="searchDd" class="dropdown-menu dropdown-menu-end p-0" aria-labelledby="dropdownMenuButton1">
+          <form action="https://eprint.iacr.org/search" method="GET" target="_blank">
+            <div class="input-group">
+              <input id="searchbox" name="q" type="search" class="form-control" autocomplete="off">
+              <button class="btn btn-secondary border input-group-append ml-2">Search</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </nav>
+</div>
+
+<main id="eprintContent" class="container px-3 py-4 p-md-4">
+  <div class="d-flex align-items-baseline gap-3 px-1 px-lg-4 mt-2 mb-2">
+    <h2 class="mb-0" id="heading">All papers in __YEAR__ (__COUNT__ results)</h2>
+    <button id="toggleAllBtn" class="btn btn-sm btn-outline-secondary" onclick="toggleAllAbstracts()">Expand all abstracts</button>
+  </div>
+  <div class="px-1 px-lg-4 mb-3">
+    <small class="mirrorNote">Same listing as <a href="https://eprint.iacr.org/__YEAR__/">eprint.iacr.org/__YEAR__</a>,
+      with each paper's <strong>Publication info</strong> shown in place. Snapshot of __FETCHED__.</small>
+  </div>
+
+  <div class="row g-2 align-items-center px-1 px-lg-4 mb-4" id="filterBar">
+    <div class="col-12 col-lg-4">
+      <label class="visually-hidden" for="q">Search</label>
+      <input id="q" type="search" class="form-control form-control-sm" autocomplete="off"
+             placeholder="Search title, author, keyword, venue, abstract">
+    </div>
+    <div class="col-6 col-lg-2">
+      <label class="visually-hidden" for="status">Publication status</label>
+      <select id="status" class="form-select form-select-sm"></select>
+    </div>
+    <div class="col-6 col-lg-3">
+      <label class="visually-hidden" for="venue">Venue</label>
+      <select id="venue" class="form-select form-select-sm"></select>
+    </div>
+    <div class="col-6 col-lg-2">
+      <label class="visually-hidden" for="cat">Category</label>
+      <select id="cat" class="form-select form-select-sm"></select>
+    </div>
+    <div class="col-6 col-lg-1">
+      <label class="visually-hidden" for="sort">Sort</label>
+      <select id="sort" class="form-select form-select-sm">
+        <option value="new">Newest</option>
+        <option value="old">Oldest</option>
+        <option value="updated">Updated</option>
+        <option value="venue">Venue</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="scrollButtons" style="position:sticky;height:30px;top:90vh;left:25%">
+    <div id="buttonContainer" class="d-none d-md-block">
+      <img src="__ARROWUP__" style="height:30px;width:30px;" title="Scroll to top" alt="Scroll to top" onclick="scrollToTop()">
+    </div>
+  </div>
+
+  <div class="paperList ms-lg-4 me-lg-4" id="paperList"></div>
+
+  <div class="w-75 mx-auto">
+    <ul class="pagination mt-5 mb-5" id="pagination"></ul>
+  </div>
+</main>
+
+<div class="container-fluid mt-auto" id="eprintFooter">
+  <a href="https://iacr.org/"><img id="iacrlogo" src="__LOGO__" class="img-fluid d-block mx-auto" alt="IACR Logo"></a>
+  <div class="colorDiv"></div>
+  <div class="alert alert-success w-75 mx-auto">
+    Note: In order to protect the privacy of readers, eprint.iacr.org
+    does not use cookies or embedded third party content.
+  </div>
+</div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      processEnvironments: false,
+      processEscapes: true
+    },
+    svg: { fontCache: 'global' },
+    options: { enableMenu: false },
+    startup: { typeset: false }
+  };
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"></script>
+<script>
+/* eprint's own abstract toggles, kept as they are on the archive */
+function toggleAbstract(elem) {
+  var target = document.getElementById(elem.dataset.target);
+  if (target.style.maxHeight) {
+    target.style.maxHeight = null;
+    elem.text = 'Show abstract';
+    elem.classList.add('abstract-closed');
+    elem.classList.remove('abstract-open');
+  } else {
+    target.style.maxHeight = target.scrollHeight + "px";
+    elem.text = 'Hide abstract';
+    elem.classList.remove('abstract-closed');
+    elem.classList.add('abstract-open');
+  }
+}
+function toggleAllAbstracts() {
+  var closed = Array.from(document.querySelectorAll('a.abstract-closed'));
+  var open = Array.from(document.querySelectorAll('a.abstract-open'));
+  var btn = document.getElementById('toggleAllBtn');
+  if (closed.length > 0) {
+    closed.forEach(function (el) { toggleAbstract(el); });
+    if (btn) btn.textContent = 'Collapse all abstracts';
+  } else {
+    open.forEach(function (el) { toggleAbstract(el); });
+    if (btn) btn.textContent = 'Expand all abstracts';
+  }
+}
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+var topNavbar = document.getElementById('topNavbar');
+if (topNavbar) {
+  document.addEventListener('scroll', function () {
+    if (window.scrollY > 100) topNavbar.classList.add('scrolled');
+    else topNavbar.classList.remove('scrolled');
+  });
+}
+</script>
+<script>
+(function () {
+  var D = JSON.parse(document.getElementById('data').textContent);
+  var KEYS = ['iacr', 'iacr_revision', 'elsewhere', 'preprint', 'other'];
+  var PER_PAGE = 100;
+
+  var papers = D.rows.map(function (r) {
+    return {
+      id: r[0], num: parseInt(r[0].split('/')[1], 10), year: parseInt(r[0], 10),
+      title: r[1], authors: r[2], cat: D.cats[r[3]], catCode: D.catCodes[r[3]],
+      pubinfo: r[4], st: r[5], venue: D.venues[r[6]], doi: r[8], kw: r[9],
+      abs: r[10], updated: r[12],
+      hay: (r[1] + ' ' + r[2] + ' ' + r[9] + ' ' + r[4] + ' ' + r[10]).toLowerCase()
+    };
+  });
+
+  var el = {
+    q: document.getElementById('q'), status: document.getElementById('status'),
+    venue: document.getElementById('venue'), cat: document.getElementById('cat'),
+    sort: document.getElementById('sort'), list: document.getElementById('paperList'),
+    pag: document.getElementById('pagination'), heading: document.getElementById('heading'),
+    toggleAll: document.getElementById('toggleAllBtn')
+  };
+  var state = { q: '', st: '', venue: '', cat: '', sort: 'new', page: 0 };
+  var view = [];
+
+  /* ---- filter options ---- */
+  var stCount = [0, 0, 0, 0, 0];
+  papers.forEach(function (p) { stCount[p.st]++; });
+  el.status.appendChild(new Option('All publication status', ''));
+  KEYS.forEach(function (k, i) {
+    if (stCount[i]) el.status.appendChild(new Option(D.statuses[i] + ' (' + stCount[i] + ')', String(i)));
+  });
+
+  var vCount = {};
+  papers.forEach(function (p) {
+    if (p.venue && p.venue !== '—') vCount[p.venue] = (vCount[p.venue] || 0) + 1;
+  });
+  el.venue.appendChild(new Option('All venues', ''));
+  Object.keys(vCount).sort(function (a, b) { return vCount[b] - vCount[a] || a.localeCompare(b); })
+    .forEach(function (v) { el.venue.appendChild(new Option(v + ' (' + vCount[v] + ')', v)); });
+
+  var cCount = {};
+  papers.forEach(function (p) { if (p.cat) cCount[p.cat] = (cCount[p.cat] || 0) + 1; });
+  el.cat.appendChild(new Option('All categories', ''));
+  Object.keys(cCount).sort().forEach(function (c) {
+    el.cat.appendChild(new Option(c + ' (' + cCount[c] + ')', c));
+  });
+
+  /* ---- rendering ---- */
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  function pubHTML(p) {
+    var text = p.pubinfo || 'Not given.';
+    var html;
+    if (p.venue && p.venue !== '—' && text.indexOf(p.venue) > -1) {
+      var at = text.indexOf(p.venue);
+      html = esc(text.slice(0, at)) + '<span class="venue">' + esc(p.venue) + '</span>' +
+        esc(text.slice(at + p.venue.length));
+    } else {
+      html = esc(text);
+    }
+    if (p.doi) {
+      html += ' <a href="' + esc(p.doi) + '" target="_blank" rel="noopener">DOI</a>';
+    }
+    return html;
+  }
+
+  function entry(p) {
+    var anchor = 'abstract-' + p.id.replace('/', '-');
+    var badge = p.cat
+      ? '<a class="catfilter" data-cat="' + esc(p.cat) + '"><small class="badge category category-' +
+        esc(p.catCode || 'uncategorized') + '">' + esc(p.cat) + '</small></a>'
+      : '';
+    return '' +
+      '<div class="d-flex mb-1">' +
+        '<div class="flex-grow-1"><a href="https://eprint.iacr.org/' + p.id + '" target="_blank" rel="noopener">' + p.id + '</a>' +
+          '<a class="ms-2" href="https://eprint.iacr.org/' + p.id + '.pdf" target="_blank" rel="noopener">(PDF)</a>' +
+        '</div>' +
+        '<div><small>Last updated:&nbsp; ' + esc(p.updated || '') + '</small></div>' +
+      '</div>' +
+      '<div class="ms-3 ms-md-5 mb-3">' +
+        '<div class="d-flex justify-content-between">' +
+          '<div class="papertitle">' + esc(p.title) + '</div>' +
+          '<div class="ms-3 d-none d-md-block">' + badge + '</div>' +
+        '</div>' +
+        '<div class="summaryauthors">' + esc(p.authors) + '</div>' +
+        '<div class="pubinfo pub-' + KEYS[p.st] + '"><small>' +
+          '<span class="pubLabel">Publication info:</span> ' + pubHTML(p) + '</small></div>' +
+        '<div class="d-flex justify-content-between align-items-start">' +
+          '<div><a class="abstract-closed" data-target="' + anchor + '" onclick="toggleAbstract(this)">Show abstract</a></div>' +
+          '<div class="d-block d-md-none">' + badge + '</div>' +
+        '</div>' +
+        '<div><div id="' + anchor + '" class="paper-abstract">' + esc(p.abs) + '</div></div>' +
+      '</div>';
+  }
+
+  function renderPage() {
+    var start = state.page * PER_PAGE;
+    var slice = view.slice(start, start + PER_PAGE);
+    el.list.innerHTML = slice.length ? slice.map(entry).join('') :
+      '<p class="text-muted">No papers match these filters.</p>';
+    if (el.toggleAll) el.toggleAll.textContent = 'Expand all abstracts';
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      try { window.MathJax.typesetPromise([el.list]).catch(function () {}); } catch (e) {}
+    }
+    renderPagination();
+  }
+
+  function pageItem(label, page, active, disabled) {
+    var li = document.createElement('li');
+    li.className = 'page-item' + (active ? ' active' : '') + (disabled ? ' disabled' : '');
+    var node;
+    if (active || disabled) {
+      node = document.createElement('span');
+      node.className = 'page-link';
+    } else {
+      node = document.createElement('a');
+      node.className = 'page-link';
+      node.href = '#';
+      node.onclick = function (e) {
+        e.preventDefault();
+        state.page = page;
+        renderPage();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        syncHash();
+      };
+    }
+    node.textContent = label;
+    li.appendChild(node);
+    return li;
+  }
+
+  function renderPagination() {
+    var pages = Math.ceil(view.length / PER_PAGE);
+    el.pag.innerHTML = '';
+    if (pages < 2) return;
+    var cur = state.page, wanted = [0, pages - 1, cur - 1, cur, cur + 1];
+    var shown = wanted.filter(function (n, i, a) {
+      return n >= 0 && n < pages && a.indexOf(n) === i;
+    }).sort(function (a, b) { return a - b; });
+    if (cur > 0) el.pag.appendChild(pageItem('« Previous', cur - 1, false, false));
+    var last = -1;
+    shown.forEach(function (n) {
+      if (last >= 0 && n > last + 1) el.pag.appendChild(pageItem('…', 0, false, true));
+      el.pag.appendChild(pageItem(String(n + 1), n, n === cur, false));
+      last = n;
+    });
+    if (cur < pages - 1) el.pag.appendChild(pageItem('Next »', cur + 1, false, false));
+  }
+
+  function apply(keepPage) {
+    view = papers.filter(function (p) {
+      if (state.st !== '' && p.st !== +state.st) return false;
+      if (state.venue && p.venue !== state.venue) return false;
+      if (state.cat && p.cat !== state.cat) return false;
+      if (state.q && p.hay.indexOf(state.q) === -1) return false;
+      return true;
+    });
+    var s = state.sort;
+    view.sort(function (a, b) {
+      if (s === 'old') return a.num - b.num;
+      if (s === 'updated') return (b.updated || '').localeCompare(a.updated || '') || b.num - a.num;
+      if (s === 'venue') {
+        var av = a.venue === '—' ? '￿' : a.venue, bv = b.venue === '—' ? '￿' : b.venue;
+        return av.localeCompare(bv) || b.num - a.num;
+      }
+      return b.num - a.num;
+    });
+    if (!keepPage) state.page = 0;
+    var filtered = view.length !== papers.length;
+    el.heading.textContent = 'All papers in ' + D.year + ' (' + view.length.toLocaleString() +
+      (filtered ? ' of ' + papers.length.toLocaleString() : '') + ' results)';
+    renderPage();
+    syncHash();
+  }
+
+  /* ---- wiring ---- */
+  var timer;
+  el.q.addEventListener('input', function () {
+    clearTimeout(timer);
+    timer = setTimeout(function () { state.q = el.q.value.trim().toLowerCase(); apply(); }, 160);
+  });
+  el.status.addEventListener('change', function () { state.st = el.status.value; apply(); });
+  el.venue.addEventListener('change', function () { state.venue = el.venue.value; apply(); });
+  el.cat.addEventListener('change', function () { state.cat = el.cat.value; apply(); });
+  el.sort.addEventListener('change', function () { state.sort = el.sort.value; apply(); });
+  el.list.addEventListener('click', function (e) {
+    var a = e.target.closest('a.catfilter');
+    if (!a) return;
+    e.preventDefault();
+    state.cat = state.cat === a.dataset.cat ? '' : a.dataset.cat;
+    el.cat.value = state.cat;
+    apply();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  function syncHash() {
+    var parts = [];
+    if (state.q) parts.push('q=' + encodeURIComponent(state.q));
+    if (state.st !== '') parts.push('st=' + state.st);
+    if (state.venue) parts.push('v=' + encodeURIComponent(state.venue));
+    if (state.cat) parts.push('c=' + encodeURIComponent(state.cat));
+    if (state.sort !== 'new') parts.push('s=' + state.sort);
+    if (state.page) parts.push('p=' + (state.page + 1));
+    try { history.replaceState(null, '', parts.length ? '#' + parts.join('&') : ' '); } catch (e) {}
+  }
+
+  (function readHash() {
+    var h = location.hash.slice(1);
+    if (!h) return;
+    h.split('&').forEach(function (kv) {
+      var i = kv.indexOf('='), k = kv.slice(0, i), v = decodeURIComponent(kv.slice(i + 1));
+      if (k === 'q') { state.q = v.toLowerCase(); el.q.value = v; }
+      if (k === 'st') { state.st = v; el.status.value = v; }
+      if (k === 'v') { state.venue = v; el.venue.value = v; }
+      if (k === 'c') { state.cat = v; el.cat.value = v; }
+      if (k === 's') { state.sort = v; el.sort.value = v; }
+      if (k === 'p') { state.page = Math.max(0, parseInt(v, 10) - 1); }
+    });
+  })();
+
+  apply(state.page > 0);
+})();
+</script>
