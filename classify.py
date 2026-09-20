@@ -13,7 +13,8 @@ STATUS_LABEL = {
 IACR = re.compile(r"^Published by the IACR in\s+(.*?)\.?$", re.I)
 IACR_REV = re.compile(r"^A (major|minor) revision of an IACR publication in\s+(.*?)\.?$", re.I)
 ELSEWHERE = re.compile(r"^Published elsewhere\.?\s*(.*)$", re.I)
-YEAR = re.compile(r"\b(19|20)\d{2}\b")
+# a year, or a year glued to an issue number ("TOSC 202603"), or "'26"
+YEAR = re.compile(r"\b(?:19|20)\d{2,4}\b|['’]\d{2}\b")
 
 
 def _short(venue):
