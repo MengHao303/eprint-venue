@@ -14,6 +14,7 @@ its publication info in the row, and filters for venue, publication status and c
 | --- | --- |
 | `scrape.py` | Fetches paper metadata from eprint.iacr.org into `data/<year>.json` |
 | `classify.py` | Turns the free-text publication info into a status + venue |
+| `venues.py` | Folds venue spellings onto one name (`CCS`, `ACM-CCS`, `ACM SIGSAC Conference on…` → `ACM CCS`) |
 | `build.py` | Renders `data/*.json` + `template.html` into `site/index.html` |
 | `template.html` | The page: layout, styles, client-side filtering |
 | `update.sh` | Incremental refresh + rebuild in one command |

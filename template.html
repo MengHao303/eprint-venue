@@ -114,20 +114,16 @@ __CSS__
   </div>
 
   <div class="row g-2 align-items-center px-1 px-lg-4 mb-4" id="filterBar">
-    <div class="col-12 col-lg-4">
+    <div class="col-12 col-lg-5">
       <label class="visually-hidden" for="q">Search</label>
       <input id="q" type="search" class="form-control form-control-sm" autocomplete="off"
              placeholder="Search title, author, keyword, venue, abstract">
-    </div>
-    <div class="col-6 col-lg-2">
-      <label class="visually-hidden" for="status">Publication status</label>
-      <select id="status" class="form-select form-select-sm"></select>
     </div>
     <div class="col-6 col-lg-3">
       <label class="visually-hidden" for="venue">Venue</label>
       <select id="venue" class="form-select form-select-sm"></select>
     </div>
-    <div class="col-6 col-lg-2">
+    <div class="col-6 col-lg-3">
       <label class="visually-hidden" for="cat">Category</label>
       <select id="cat" class="form-select form-select-sm"></select>
     </div>
@@ -234,30 +230,19 @@ if (topNavbar) {
   });
 
   var el = {
-    q: document.getElementById('q'), status: document.getElementById('status'),
-    venue: document.getElementById('venue'), cat: document.getElementById('cat'),
+    q: document.getElementById('q'), venue: document.getElementById('venue'), cat: document.getElementById('cat'),
     sort: document.getElementById('sort'), list: document.getElementById('paperList'),
     pag: document.getElementById('pagination'), heading: document.getElementById('heading'),
     toggleAll: document.getElementById('toggleAllBtn')
   };
-  var state = { q: '', st: '', venue: '', cat: '', sort: 'new', page: 0 };
+  var state = { q: '', venue: '', cat: '', sort: 'new', page: 0 };
   var view = [];
 
   /* ---- filter options ---- */
-  var stCount = [0, 0, 0, 0, 0];
-  papers.forEach(function (p) { stCount[p.st]++; });
-  el.status.appendChild(new Option('All publication status', ''));
-  KEYS.forEach(function (k, i) {
-    if (stCount[i]) el.status.appendChild(new Option(D.statuses[i] + ' (' + stCount[i] + ')', String(i)));
-  });
-
-  var vCount = {};
-  papers.forEach(function (p) {
-    if (p.venue && p.venue !== '—') vCount[p.venue] = (vCount[p.venue] || 0) + 1;
-  });
   el.venue.appendChild(new Option('All venues', ''));
-  Object.keys(vCount).sort(function (a, b) { return vCount[b] - vCount[a] || a.localeCompare(b); })
-    .forEach(function (v) { el.venue.appendChild(new Option(v + ' (' + vCount[v] + ')', v)); });
+  D.filterVenues.forEach(function (vn) {
+    el.venue.appendChild(new Option(vn[0] + ' (' + vn[1] + ')', vn[0]));
+  });
 
   var cCount = {};
   papers.forEach(function (p) { if (p.cat) cCount[p.cat] = (cCount[p.cat] || 0) + 1; });
@@ -374,7 +359,6 @@ if (topNavbar) {
 
   function apply(keepPage) {
     view = papers.filter(function (p) {
-      if (state.st !== '' && p.st !== +state.st) return false;
       if (state.venue && p.venue !== state.venue) return false;
       if (state.cat && p.cat !== state.cat) return false;
       if (state.q && p.hay.indexOf(state.q) === -1) return false;
@@ -404,7 +388,6 @@ if (topNavbar) {
     clearTimeout(timer);
     timer = setTimeout(function () { state.q = el.q.value.trim().toLowerCase(); apply(); }, 160);
   });
-  el.status.addEventListener('change', function () { state.st = el.status.value; apply(); });
   el.venue.addEventListener('change', function () { state.venue = el.venue.value; apply(); });
   el.cat.addEventListener('change', function () { state.cat = el.cat.value; apply(); });
   el.sort.addEventListener('change', function () { state.sort = el.sort.value; apply(); });
@@ -421,7 +404,6 @@ if (topNavbar) {
   function syncHash() {
     var parts = [];
     if (state.q) parts.push('q=' + encodeURIComponent(state.q));
-    if (state.st !== '') parts.push('st=' + state.st);
     if (state.venue) parts.push('v=' + encodeURIComponent(state.venue));
     if (state.cat) parts.push('c=' + encodeURIComponent(state.cat));
     if (state.sort !== 'new') parts.push('s=' + state.sort);
@@ -435,7 +417,6 @@ if (topNavbar) {
     h.split('&').forEach(function (kv) {
       var i = kv.indexOf('='), k = kv.slice(0, i), v = decodeURIComponent(kv.slice(i + 1));
       if (k === 'q') { state.q = v.toLowerCase(); el.q.value = v; }
-      if (k === 'st') { state.st = v; el.status.value = v; }
       if (k === 'v') { state.venue = v; el.venue.value = v; }
       if (k === 'c') { state.cat = v; el.cat.value = v; }
       if (k === 's') { state.sort = v; el.sort.value = v; }

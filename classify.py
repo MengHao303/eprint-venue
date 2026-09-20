@@ -1,6 +1,8 @@
 """Turn the free-text 'Publication info' line into a status + venue."""
 import re
 
+import venues
+
 STATUS_ORDER = ["iacr", "iacr_revision", "elsewhere", "preprint", "other"]
 STATUS_LABEL = {
     "iacr": "Published by the IACR",
@@ -13,19 +15,9 @@ STATUS_LABEL = {
 IACR = re.compile(r"^Published by the IACR in\s+(.*?)\.?$", re.I)
 IACR_REV = re.compile(r"^A (major|minor) revision of an IACR publication in\s+(.*?)\.?$", re.I)
 ELSEWHERE = re.compile(r"^Published elsewhere\.?\s*(.*)$", re.I)
-# a year, or a year glued to an issue number ("TOSC 202603"), or "'26"
-YEAR = re.compile(r"\b(?:19|20)\d{2,4}\b|['’]\d{2}\b")
-
-
 def _short(venue):
-    """A groupable venue key: 'CRYPTO 2026' -> 'CRYPTO', free text -> first clause."""
-    v = venue.strip().strip(".,;")
-    v = re.sub(r"\s+", " ", v)
-    v = YEAR.sub("", v).strip(" .,;-—")
-    v = re.split(r"[,;(]|\s+-\s+", v)[0].strip()
-    if len(v) > 48:
-        v = v[:45].rstrip() + "…"
-    return v or "Unspecified"
+    """A groupable venue key: every spelling of ACM CCS folds onto 'ACM CCS'."""
+    return venues.canonical(venue) or "Unspecified"
 
 
 def classify(pubinfo):

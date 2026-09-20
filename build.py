@@ -6,6 +6,7 @@ import os
 import sys
 import time
 
+import venues
 from classify import classify, STATUS_LABEL, STATUS_ORDER
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -56,7 +57,7 @@ def load(years=None):
 
 
 def pack(papers):
-    cats, venues = [], []
+    cats, venue_names = [], []
 
     def idx(lst, v):
         try:
@@ -75,7 +76,7 @@ def pack(papers):
             idx(cats, p.get("category", "")),
             p.get("pubinfo", ""),
             STATUS_ORDER.index(c["status"]),
-            idx(venues, c["venue_key"]),
+            idx(venue_names, c["venue_key"]),
             c["revision"],
             p.get("doi", ""),
             "; ".join(p.get("keywords", [])),
@@ -83,8 +84,17 @@ def pack(papers):
             p.get("received", ""),
             p.get("revised", "") or p.get("updated", ""),
         ])
+    counts = {}
+    for row in rows:
+        counts[venue_names[row[6]]] = counts.get(venue_names[row[6]], 0) + 1
+    offered = sorted(
+        ((v, n) for v, n in counts.items()
+         if v and v not in ("\u2014", "Unspecified")
+         and (not venues.ALLOWED or v in venues.ALLOWED)
+         and v not in venues.HIDDEN and n >= venues.MIN_PAPERS),
+        key=lambda vn: (-vn[1], vn[0]))
     return {"cats": cats, "catCodes": [CAT_CODES.get(c, "uncategorized") for c in cats],
-            "venues": venues,
+            "venues": venue_names, "filterVenues": offered,
             "statuses": [STATUS_LABEL[s] for s in STATUS_ORDER],
             "rows": rows}
 
