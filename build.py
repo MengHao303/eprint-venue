@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build the static site from the scraped JSON in data/."""
 import base64
+import datetime
 import json
 import os
 import sys
@@ -99,6 +100,21 @@ def pack(papers):
             "rows": rows}
 
 
+SGT = datetime.timezone(datetime.timedelta(hours=8))  # Singapore, no DST
+
+
+def singapore_time(stamp):
+    """'2026-09-20T07:23:56Z' -> '2026-09-20 15:23 (Singapore)'."""
+    for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d %H:%M:%S"):
+        try:
+            utc = datetime.datetime.strptime(stamp, fmt).replace(
+                tzinfo=datetime.timezone.utc)
+        except ValueError:
+            continue
+        return utc.astimezone(SGT).strftime("%Y-%m-%d %H:%M (Singapore)")
+    return stamp
+
+
 def main(argv):
     years = [a for a in argv if a.isdigit()]
     papers, fetched = load(years or None)
@@ -120,7 +136,10 @@ def main(argv):
             .replace("__YEAR__", span)
             .replace("__YEARS__", span)
             .replace("__COUNT__", str(len(papers)))
-            .replace("__FETCHED__", fetched or time.strftime("%Y-%m-%d")))
+            .replace("__FETCHED__",
+                     singapore_time(fetched) if fetched
+                     else datetime.datetime.now(SGT).strftime(
+                         "%Y-%m-%d %H:%M (Singapore)")))
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w") as f:
         f.write(html)

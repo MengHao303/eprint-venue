@@ -176,7 +176,7 @@ def scrape_year(year, force=False, limit=0):
         os.makedirs(DATA_DIR, exist_ok=True)
         with open(path, "w") as f:
             json.dump({"year": year,
-                       "fetched": time.strftime("%Y-%m-%d %H:%M:%S"),
+                       "fetched": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                        "count": len(papers),
                        "papers": papers}, f, ensure_ascii=False)
 
