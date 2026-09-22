@@ -70,9 +70,17 @@ LISTING_ENTRY = re.compile(
     r'<a href="/(\d{4}/\d+)">\1</a>.*?Last updated:&nbsp;\s*([\d-]+)', re.S)
 
 
-def list_year(year):
-    """Return {paper_id: last_updated} for every paper of a year."""
-    ids, offset = {}, 0
+LISTING_TOTAL = re.compile(r"\((\d+)\s+results\)")
+
+
+def list_year(year, head_only=False):
+    """Return ({paper_id: last_updated}, total) for a year.
+
+    `total` is the count eprint prints above the listing ("All papers in 2026
+    (2135 results)"), which is on every page, so `head_only` buys it — along
+    with the 100 newest papers — for a single request.
+    """
+    ids, total, offset = {}, 0, 0
     while True:
         url = f"{BASE}/{year}/" if offset == 0 else f"{BASE}/{year}/?offset={offset}"
         page = get(url)
@@ -83,13 +91,19 @@ def list_year(year):
             break
         for pid, updated in found:
             ids[pid] = updated
+        if not total:
+            m = LISTING_TOTAL.search(page)
+            total = int(m.group(1)) if m else 0
+        if head_only:
+            break
         sys.stderr.write(f"\r  listing {year}: {len(ids)} papers")
         sys.stderr.flush()
         if f'href="/{year}/?offset={offset + 100}"' not in page:
             break
         offset += 100
-    sys.stderr.write("\n")
-    return ids
+    if not head_only:
+        sys.stderr.write("\n")
+    return ids, total
 
 
 def list_recent(days):
@@ -181,9 +195,22 @@ def scrape_year(year, force=False, limit=0, ids=None):
             cache = {p["id"]: p for p in json.load(f)["papers"]}
 
     partial = ids is not None
+    if partial:
+        # /days/N reports revisions, but a paper that clears moderation days
+        # after it was submitted enters the listing with its old "last updated"
+        # date and never shows up there — so read the newest 100 as well, and
+        # compare the year's printed total against what we would then hold. A
+        # mismatch means something older moved in (or out), and only the full
+        # listing can say what.
+        head, total = list_year(year, head_only=True)
+        ids = {**ids, **head}
+        if total and len(set(cache) | set(ids)) != total:
+            print(f"{year} lists {total} papers, we would have "
+                  f"{len(set(cache) | set(ids))} — reading the full listing")
+            partial = False
     if not partial:
         print(f"Listing {year} ...")
-        ids = list_year(year)
+        ids, _ = list_year(year)
     todo = [pid for pid, upd in ids.items()
             if force or pid not in cache or cache[pid].get("updated") != upd]
     todo.sort(key=lambda p: int(p.split("/")[1]), reverse=True)

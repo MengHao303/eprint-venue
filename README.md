@@ -49,31 +49,44 @@ A routine refresh is therefore ~20 listing requests plus a handful of paper page
 Run `FORCE=1 ./update.sh` occasionally (say monthly) to catch metadata edits that did
 not bump the date.
 
-`--recent N` replaces step 1 with a single request to `eprint.iacr.org/days/N`, the
-archive's own "papers updated in last N days" listing, which gives the same ids and
-dates for everything that moved — across all years, so it is filtered to the years kept
-in `data/`. It is a partial view of the year, so such a run only adds and updates
-papers, never drops them, and a run that finds nothing new does not rewrite the file at
-all. That last part is what lets CI tell an empty hour from a busy one.
+`--recent N` replaces step 1 with two requests. The first is `eprint.iacr.org/days/N`,
+the archive's own "papers updated in last N days" listing, which gives the same ids and
+dates for everything revised — across all years, so it is filtered to the years kept in
+`data/`.
+
+That listing alone is not enough: a paper that clears moderation days after it was
+submitted enters the year listing carrying its *old* `Last updated` date, so it never
+appears under `/days` at all. (Seen in practice: 40 papers published in one morning,
+dated three to four days earlier, none of them in `/days/2`.) The second request is
+therefore the first page of the year listing, which carries the 100 newest papers and,
+in its header, the year's total — `All papers in 2026 (2135 results)`. When that total
+does not match what the run would end up holding, something older moved in or out, and
+the run reads the full listing after all.
+
+So a `--recent` run is a partial view that knows when it is incomplete: it only adds and
+updates papers, it upgrades itself to a full scan when the count says it must, and when
+nothing moved it does not rewrite the file at all. That last part is what lets CI tell
+an empty hour from a busy one.
 
 ## Automatic updates
 
 `.github/workflows/update.yml` keeps the site in step with eprint on two tracks:
 
-- **every hour** (`:17`), a probe: one request to `/days/2` names every paper the archive
-  added or revised, and only those paper pages are fetched. An hour in which eprint did
-  not move writes no file, and the run then stops before the rebuild, the commit and the
-  deploy. A quiet hour therefore costs a single request, so asking this often is cheap
-  for the archive: about 24 requests a day.
+- **every hour** (`:17`), a probe: two requests — `/days/2` for what was revised, and
+  the first page of the year listing for what was just published — and then only the
+  paper pages that actually moved. An hour in which eprint did not move writes no file,
+  and the run stops before the rebuild, the commit and the deploy. A quiet hour
+  therefore costs two requests, so asking this often is cheap for the archive.
 - **every day** at 04:43 UTC (12:43 Singapore time), the full year listing, as a safety
   net: `/days` only reaches back two days, so this is what catches anything the probes
   missed while CI was down. This run always rebuilds and deploys.
 
 That daily slot is not trusted on its own, because GitHub's scheduler drops whole hours
 of runs on a free public repository (this one has seen a scheduled run arrive 5½ hours
-late, and hourly slots vanish entirely). So the choice is really made by the age of
-`data/2026.json`: any run at all, whichever cron woke it, reads the full listing once
-the file is more than a day old, and the same check covers a missing file on a fresh
+late, and hourly slots vanish entirely). Two other things therefore reach for the full
+listing without it: the probe itself, whenever the year's total says its view is
+incomplete, and the age of `data/2026.json` — any run, whichever cron woke it, scans in
+full once the file is more than a day old, which also covers a missing file on a fresh
 clone.
 
 A run that has work to do (and every push to `main` or manual run) then rebuilds
