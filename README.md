@@ -20,13 +20,14 @@ its publication info in the row, and filters for venue, publication status and c
 | `build.py` | Renders `data/*.json` + `template.html` into `site/index.html` |
 | `template.html` | The page: layout, styles, client-side filtering |
 | `update.sh` | Incremental refresh + rebuild in one command |
-| `.github/workflows/update.yml` | Daily refresh + deploy to GitHub Pages |
+| `.github/workflows/update.yml` | Hourly refresh + deploy to GitHub Pages |
 
 ## Usage
 
 ```sh
 ./update.sh              # refresh 2026 and rebuild the site
 ./update.sh 2024 2025 2026   # several years in one page
+RECENT=2 ./update.sh     # only what eprint touched in the last 2 days (1 request)
 FORCE=1 ./update.sh      # ignore the cache and re-fetch everything
 open site/index.html     # self-contained, no server needed
 ```
@@ -48,27 +49,47 @@ A routine refresh is therefore ~20 listing requests plus a handful of paper page
 Run `FORCE=1 ./update.sh` occasionally (say monthly) to catch metadata edits that did
 not bump the date.
 
+`--recent N` replaces step 1 with a single request to `eprint.iacr.org/days/N`, the
+archive's own "papers updated in last N days" listing, which gives the same ids and
+dates for everything that moved — across all years, so it is filtered to the years kept
+in `data/`. It is a partial view of the year, so such a run only adds and updates
+papers, never drops them, and a run that finds nothing new does not rewrite the file at
+all. That last part is what lets CI tell an empty hour from a busy one.
+
 ## Automatic updates
 
-`.github/workflows/update.yml` runs every day at 04:43 UTC (12:43 Singapore time),
-and on every push to `main`:
+`.github/workflows/update.yml` keeps the site in step with eprint on two tracks:
 
-1. reads the year listing and re-fetches only the papers whose `Last updated` moved
-   (`--max 300` caps one run, so a backlog is worked off over several days instead of
-   hammering the archive);
-2. rebuilds `site/index.html`;
-3. commits the refreshed `data/2026.json` back to the repository;
-4. deploys `site/` to GitHub Pages.
+- **every hour** (`:17`), a probe: one request to `/days/2` names every paper the archive
+  added or revised, and only those paper pages are fetched. An hour in which eprint did
+  not move writes no file, and the run then stops before the rebuild, the commit and the
+  deploy — so the site is normally at most an hour behind the archive, for about
+  24 requests a day.
+- **every day** at 04:43 UTC (12:43 Singapore time), the full year listing, as a safety
+  net: `/days` only reaches back two days, so this is what catches anything the probes
+  missed while CI was down. This run always rebuilds and deploys.
+
+A run that has work to do (and every push to `main` or manual run) then rebuilds
+`site/index.html`, commits the refreshed `data/2026.json` back to the repository, and
+deploys `site/` to GitHub Pages. `--max 300` caps the paper pages of a single run, so a
+backlog is worked off over several runs instead of hammering the archive.
 
 The committed JSON is what makes this cheap: the expensive first pass over a whole year
 is done once, locally, and CI only ever fetches the delta. You can also trigger a run by
 hand from the Actions tab (`Run workflow`).
 
-Two things to know:
+A few things to know:
 
+- eprint offers no push notification — no webhook, and its "Subscribe" link is IACR
+  *news* by email (currently disabled), not per-paper updates. Hourly polling of `/days`
+  is as close to live as the archive allows; RSS/Atom and OAI-PMH are the other read-only
+  options.
+- GitHub's cron is not punctual: scheduled runs are commonly delayed by minutes to tens
+  of minutes under load, and can be skipped. "Within the hour" is the promise, not "on
+  the minute".
 - GitHub disables scheduled workflows in repositories with no activity for 60 days. The
-  daily data commit normally counts as activity, but if the schedule ever goes quiet,
-  re-enable it from the Actions tab.
+  data commits normally count as activity, but if the schedule ever goes quiet, re-enable
+  it from the Actions tab.
 - CI identifies itself through `EPRINT_UA`, which names this repository, so the archive's
   operators can see who is fetching and get in touch. If eprint.iacr.org ever rate-limits
   or blocks CI, the workflow fails loudly and the deployed site simply keeps the last

@@ -92,6 +92,19 @@ def list_year(year):
     return ids
 
 
+def list_recent(days):
+    """Return {paper_id: last_updated} for every paper eprint added or revised
+    in the last `days` days.
+
+    One request to /days/N, instead of the ~20 pages of a year listing. The
+    page spans all years, so the caller filters it down to the years it keeps.
+    """
+    page = get(f"{BASE}/days/{days}")
+    ids = dict(LISTING_ENTRY.findall(page)) if page else {}
+    print(f"{len(ids)} papers touched in the last {days} days")
+    return ids
+
+
 def parse_paper(pid, page):
     def meta_field(name):
         m = re.search(r"<dt>\s*%s\s*</dt>\s*(.*?)(?=<dt>|</dl>)" % name, page, re.S)
@@ -153,15 +166,24 @@ def parse_paper(pid, page):
     }
 
 
-def scrape_year(year, force=False, limit=0):
+def scrape_year(year, force=False, limit=0, ids=None):
+    """Refresh data/<year>.json.
+
+    `ids` is {paper_id: last_updated} for the year. By default it comes from
+    the year listing, which is complete, so papers missing from it are dropped.
+    A caller that passes a partial view instead (--recent) only adds and
+    updates, and a run that finds nothing new leaves the file untouched.
+    """
     path = os.path.join(DATA_DIR, f"{year}.json")
     cache = {}
     if os.path.exists(path) and not force:
         with open(path) as f:
             cache = {p["id"]: p for p in json.load(f)["papers"]}
 
-    print(f"Listing {year} ...")
-    ids = list_year(year)
+    partial = ids is not None
+    if not partial:
+        print(f"Listing {year} ...")
+        ids = list_year(year)
     todo = [pid for pid, upd in ids.items()
             if force or pid not in cache or cache[pid].get("updated") != upd]
     todo.sort(key=lambda p: int(p.split("/")[1]), reverse=True)
@@ -169,8 +191,11 @@ def scrape_year(year, force=False, limit=0):
     if limit and len(todo) > limit:
         todo = todo[:limit]
         capped = f" (capped at {limit} this run; rerun to continue)"
-    print(f"{len(ids)} papers in {year}; {len(todo)} to fetch "
-          f"({len(ids) - len(todo)} cached){capped}")
+    if partial:
+        print(f"{len(ids)} of them in {year}; {len(todo)} to fetch{capped}")
+    else:
+        print(f"{len(ids)} papers in {year}; {len(todo)} to fetch "
+              f"({len(ids) - len(todo)} cached){capped}")
 
     def save(papers):
         os.makedirs(DATA_DIR, exist_ok=True)
@@ -181,8 +206,13 @@ def scrape_year(year, force=False, limit=0):
                        "papers": papers}, f, ensure_ascii=False)
 
     def ordered():
-        return [cache[pid] for pid in sorted(ids, key=lambda p: int(p.split("/")[1]),
+        keys = cache if partial else ids
+        return [cache[pid] for pid in sorted(keys, key=lambda p: int(p.split("/")[1]),
                                              reverse=True) if pid in cache]
+
+    if partial and not todo:
+        print(f"Nothing new in {year}; left {path} as it is")
+        return ordered()
 
     for n, pid in enumerate(todo, 1):
         page = get(f"{BASE}/{pid}")
@@ -213,7 +243,17 @@ if __name__ == "__main__":
     ap.add_argument("--max", type=int, default=0, dest="limit",
                     help="fetch at most this many paper pages per run "
                          "(0 = no limit); the rest are picked up next run")
+    ap.add_argument("--recent", type=int, default=0, metavar="DAYS",
+                    help="take the changed papers from /days/DAYS (a single "
+                         "request) instead of scanning the year listing; "
+                         "data files with nothing new are not rewritten")
     a = ap.parse_args()
     STATE["delay"] = a.delay
-    for y in (a.years or ["2026"]):
-        scrape_year(int(y), a.force, a.limit)
+    years = a.years or ["2026"]
+    recent = list_recent(a.recent) if a.recent else None
+    for y in years:
+        ids = None
+        if recent is not None:
+            ids = {pid: upd for pid, upd in recent.items()
+                   if pid.startswith(f"{y}/")}
+        scrape_year(int(y), a.force, a.limit, ids)

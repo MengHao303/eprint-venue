@@ -2,7 +2,10 @@ name: Refresh and deploy
 
 on:
   schedule:
-    # 04:43 UTC daily (12:43 Singapore time)
+    # Every hour: one request to /days/2 to see whether eprint moved at all.
+    - cron: "17 * * * *"
+    # Once a day, 04:43 UTC (12:43 Singapore): the full year listing as a
+    # safety net, since /days only reaches back two days.
     - cron: "43 4 * * *"
   workflow_dispatch:
   push:
@@ -16,6 +19,10 @@ permissions:
 concurrency:
   group: pages
   cancel-in-progress: false
+
+env:
+  DAILY_CRON: "43 4 * * *"
+  EPRINT_UA: "eprint-venue/1.0 (+https://github.com/MengHao303/eprint-venue) hourly metadata refresh"
 
 jobs:
   refresh:
@@ -31,29 +38,46 @@ jobs:
           python-version: "3.12"
 
       - name: Fetch new and changed papers
-        # Reads the year listing (a handful of requests) and only re-fetches
-        # papers whose "Last updated" date moved. --max keeps a single run
-        # small if a backlog builds up; the rest is picked up the next day.
-        env:
-          EPRINT_UA: "eprint-venue/1.0 (+https://github.com/MengHao303/eprint-venue) daily metadata refresh"
-        run: python3 scrape.py 2026 --delay 1.5 --max 300
+        id: fetch
+        # --max keeps a single run small if a backlog builds up; the rest is
+        # picked up by the next run.
+        run: |
+          if [ "${{ github.event.schedule }}" = "$DAILY_CRON" ]; then
+            python3 scrape.py 2026 --delay 1.5 --max 300
+          else
+            python3 scrape.py 2026 --recent 2 --delay 1.5 --max 300
+          fi
+          # An hourly probe that found nothing rewrote no file, so git is the
+          # signal: nothing to rebuild, commit or deploy. A push or a manual
+          # run always deploys, because the page itself may have changed.
+          if [ "${{ github.event_name }}" = "schedule" ] && git diff --quiet -- data; then
+            echo "eprint has nothing new; skipping the rebuild and deploy"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build the site
+        if: steps.fetch.outputs.changed == 'true'
         run: python3 build.py
 
       - name: Commit refreshed metadata
+        if: steps.fetch.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data
-          git diff --staged --quiet || git commit -m "data: refresh $(date -u +%F)"
+          git diff --staged --quiet || git commit -m "data: refresh $(date -u +%FT%RZ)"
           git push
 
       - uses: actions/configure-pages@v5
+        if: steps.fetch.outputs.changed == 'true'
 
       - uses: actions/upload-pages-artifact@v3
+        if: steps.fetch.outputs.changed == 'true'
         with:
           path: site
 
       - id: deploy
+        if: steps.fetch.outputs.changed == 'true'
         uses: actions/deploy-pages@v4
