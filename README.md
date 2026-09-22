@@ -63,11 +63,18 @@ all. That last part is what lets CI tell an empty hour from a busy one.
 - **every hour** (`:17`), a probe: one request to `/days/2` names every paper the archive
   added or revised, and only those paper pages are fetched. An hour in which eprint did
   not move writes no file, and the run then stops before the rebuild, the commit and the
-  deploy — so the site is normally at most an hour behind the archive, for about
-  24 requests a day.
+  deploy. A quiet hour therefore costs a single request, so asking this often is cheap
+  for the archive: about 24 requests a day.
 - **every day** at 04:43 UTC (12:43 Singapore time), the full year listing, as a safety
   net: `/days` only reaches back two days, so this is what catches anything the probes
   missed while CI was down. This run always rebuilds and deploys.
+
+That daily slot is not trusted on its own, because GitHub's scheduler drops whole hours
+of runs on a free public repository (this one has seen a scheduled run arrive 5½ hours
+late, and hourly slots vanish entirely). So the choice is really made by the age of
+`data/2026.json`: any run at all, whichever cron woke it, reads the full listing once
+the file is more than a day old, and the same check covers a missing file on a fresh
+clone.
 
 A run that has work to do (and every push to `main` or manual run) then rebuilds
 `site/index.html`, commits the refreshed `data/2026.json` back to the repository, and
@@ -85,9 +92,12 @@ A few things to know:
   update). An email could be relayed into a `repository_dispatch` to cut the lag from
   under an hour to a few minutes, but that means a mail-to-webhook hop that fails
   silently, so this repository polls `/days` instead.
-- GitHub's cron is not punctual: scheduled runs are commonly delayed by minutes to tens
-  of minutes under load, and can be skipped. "Within the hour" is the promise, not "on
-  the minute".
+- GitHub's cron is not punctual, and on a free public repository it is not even
+  dependable: runs arrive tens of minutes to hours late, and individual slots are
+  dropped. Hourly is what is asked for, not what is delivered — expect the site to
+  be a few hours behind at times. Reliable cadence would need an outside trigger
+  (a cron service calling `workflow_dispatch`, or a local scheduler), which is
+  deliberately not set up here.
 - GitHub disables scheduled workflows in repositories with no activity for 60 days. The
   data commits normally count as activity, but if the schedule ever goes quiet, re-enable
   it from the Actions tab.

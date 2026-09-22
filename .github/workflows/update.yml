@@ -42,9 +42,17 @@ jobs:
         # --max keeps a single run small if a backlog builds up; the rest is
         # picked up by the next run.
         run: |
-          if [ "${{ github.event.schedule }}" = "$DAILY_CRON" ]; then
+          # How old is the data we have? /days/2 only reaches back two days, so
+          # once the file is a day old the full listing has to be read again.
+          # GitHub drops scheduled runs (whole hours of them), so the daily slot
+          # cannot be the only thing that triggers that scan: whichever run does
+          # fire takes it over.
+          AGE=$(python3 -c "import calendar, json, time; print(int(time.time() - calendar.timegm(time.strptime(json.load(open('data/2026.json'))['fetched'], '%Y-%m-%dT%H:%M:%SZ'))))" 2>/dev/null || echo 999999)
+          if [ "${{ github.event.schedule }}" = "$DAILY_CRON" ] || [ "$AGE" -gt 86400 ]; then
+            echo "full year listing (data is ${AGE}s old)"
             python3 scrape.py 2026 --delay 1.5 --max 300
           else
+            echo "probe (data is ${AGE}s old)"
             python3 scrape.py 2026 --recent 2 --delay 1.5 --max 300
           fi
           # An hourly probe that found nothing rewrote no file, so git is the
