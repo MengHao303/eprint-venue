@@ -80,10 +80,11 @@ hand from the Actions tab (`Run workflow`).
 
 A few things to know:
 
-- eprint offers no push notification — no webhook, and its "Subscribe" link is IACR
-  *news* by email (currently disabled), not per-paper updates. Hourly polling of `/days`
-  is as close to live as the archive allows; RSS/Atom and OAI-PMH are the other read-only
-  options.
+- eprint offers nothing to push *at* a machine: no webhook. What it offers a reader is
+  RSS/Atom, OAI-PMH, and IACR's email alerts (which do reach subscribers on every
+  update). An email could be relayed into a `repository_dispatch` to cut the lag from
+  under an hour to a few minutes, but that means a mail-to-webhook hop that fails
+  silently, so this repository polls `/days` instead.
 - GitHub's cron is not punctual: scheduled runs are commonly delayed by minutes to tens
   of minutes under load, and can be skipped. "Within the hour" is the promise, not "on
   the minute".
