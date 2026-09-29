@@ -1,15 +1,20 @@
 name: Refresh and deploy
 
 on:
-  schedule:
-    # Every hour: one request to /days/2 to see whether eprint moved at all.
-    - cron: "17 * * * *"
-    # Once a day, 04:43 UTC (12:43 Singapore): the full year listing as a
-    # safety net, since /days only reaches back two days.
-    - cron: "43 4 * * *"
+  # Paused 2026-09-29: eprint.iacr.org started answering this job with a
+  # Cloudflare 403 aimed at its User-Agent. The hourly schedule and the push
+  # trigger (which also fetches) stay off until the archive's maintainers say
+  # how, and how often, we may read it. Run by hand only.
+  #
+  # schedule:
+  #   # Every hour: one request to /days/2 to see whether eprint moved at all.
+  #   - cron: "17 * * * *"
+  #   # Once a day, 04:43 UTC (12:43 Singapore): the full year listing as a
+  #   # safety net, since /days only reaches back two days.
+  #   - cron: "43 4 * * *"
+  # push:
+  #   branches: [main]
   workflow_dispatch:
-  push:
-    branches: [main]
 
 permissions:
   contents: write
