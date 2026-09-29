@@ -20,7 +20,7 @@ its publication info in the row, and filters for venue, publication status and c
 | `build.py` | Renders `data/*.json` + `template.html` into `site/index.html` |
 | `template.html` | The page: layout, styles, client-side filtering |
 | `update.sh` | Incremental refresh + rebuild in one command |
-| `.github/workflows/update.yml` | Hourly refresh + deploy to GitHub Pages |
+| `.github/workflows/update.yml` | Daily refresh + deploy to GitHub Pages (paused, see below) |
 
 ## Usage
 
@@ -70,27 +70,25 @@ an empty hour from a busy one.
 
 ## Automatic updates
 
-`.github/workflows/update.yml` keeps the site in step with eprint on two tracks:
+> **Paused since 2026-09-29.** eprint.iacr.org answers this workflow's User-Agent with a
+> Cloudflare 403, so the schedule and the push trigger are commented out and the site
+> keeps its last snapshot (2026-09-27). The daily setup below is ready but stays off until
+> the archive's maintainers agree to it; nothing here should be changed to get past the
+> block.
 
-- **every hour** (`:17`), a probe: two requests — `/days/2` for what was revised, and
-  the first page of the year listing for what was just published — and then only the
-  paper pages that actually moved. An hour in which eprint did not move writes no file,
-  and the run stops before the rebuild, the commit and the deploy. A quiet hour
-  therefore costs two requests, so asking this often is cheap for the archive.
-- **every day** at 04:43 UTC (12:43 Singapore time), the full year listing, as a safety
-  net: `/days` only reaches back two days, so this is what catches anything the probes
-  missed while CI was down. This run always rebuilds and deploys.
+`.github/workflows/update.yml` is set up for **one run a day**, at 00:07 UTC (08:07
+Singapore time):
 
-That daily slot is not trusted on its own, because GitHub's scheduler drops whole hours
-of runs on a free public repository (this one has seen a scheduled run arrive 5½ hours
-late, and hourly slots vanish entirely). Two other things therefore reach for the full
-listing without it: the probe itself, whenever the year's total says its view is
-incomplete, and the age of `data/2026.json` — any run, whichever cron woke it, scans in
-full once the file is more than a day old, which also covers a missing file on a fresh
-clone.
+- normally a probe: two requests — `/days/3` for what was revised, and the first page
+  of the year listing for what was just published — and then only the paper pages that
+  actually moved. Three days rather than one, so a day that GitHub's scheduler drops is
+  still covered by the next run. A day in which eprint did not move writes no file, and
+  the run stops before the rebuild, the commit and the deploy.
+- the full year listing instead, whenever the probe's count says its view is incomplete,
+  or whenever `data/2026.json` is more than 60 hours old — a longer outage, a quiet
+  stretch in which nothing was rewritten, or a missing file on a fresh clone.
 
-A run that has work to do (and every push to `main` or manual run) then rebuilds
-`site/index.html`, commits the refreshed `data/2026.json` back to the repository, and
+A run that has work to do (and every manual run) then rebuilds `site/index.html`, commits the refreshed `data/2026.json` back to the repository, and
 deploys `site/` to GitHub Pages. `--max 300` caps the paper pages of a single run, so a
 backlog is worked off over several runs instead of hammering the archive.
 
@@ -103,21 +101,21 @@ A few things to know:
 - eprint offers nothing to push *at* a machine: no webhook. What it offers a reader is
   RSS/Atom, OAI-PMH, and IACR's email alerts (which do reach subscribers on every
   update). An email could be relayed into a `repository_dispatch` to cut the lag from
-  under an hour to a few minutes, but that means a mail-to-webhook hop that fails
+  a day to a few minutes, but that means a mail-to-webhook hop that fails
   silently, so this repository polls `/days` instead.
 - GitHub's cron is not punctual, and on a free public repository it is not even
   dependable: runs arrive tens of minutes to hours late, and individual slots are
-  dropped. Hourly is what is asked for, not what is delivered — expect the site to
-  be a few hours behind at times. Reliable cadence would need an outside trigger
-  (a cron service calling `workflow_dispatch`, or a local scheduler), which is
-  deliberately not set up here.
+  dropped. Expect a run to arrive late now and then, and the odd day to be skipped.
+  Reliable cadence would need an outside trigger (a cron service calling
+  `workflow_dispatch`, or a local scheduler), which is deliberately not set up here.
 - GitHub disables scheduled workflows in repositories with no activity for 60 days. The
   data commits normally count as activity, but if the schedule ever goes quiet, re-enable
   it from the Actions tab.
 - CI identifies itself through `EPRINT_UA`, which names this repository, so the archive's
   operators can see who is fetching and get in touch. If eprint.iacr.org ever rate-limits
   or blocks CI, the workflow fails loudly and the deployed site simply keeps the last
-  good snapshot.
+  good snapshot. That is what happened in September 2026 (see the note at the top of
+  this section).
 
 ## Fetching politely
 
