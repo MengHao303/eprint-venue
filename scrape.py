@@ -4,6 +4,11 @@ field that the year listing pages omit.
 
 Metadata only (no PDFs), polite rate limiting, and incremental: papers whose
 "last updated" date is unchanged since the previous run are not re-fetched.
+
+Two sources: the HTML year listing and paper pages (the original scraper,
+for a first pass over a year), and --feed, the way the archive's maintainer
+asked us to keep up: the RSS feed says what changed, and the JSON API
+(EPRINT_API_KEY, 100 requests a day) supplies each changed paper.
 """
 import argparse
 import html
@@ -14,12 +19,13 @@ import sys
 import time
 import urllib.error
 import urllib.request
+import xml.etree.ElementTree as ET
 
 BASE = "https://eprint.iacr.org"
 # Identify honestly; override with EPRINT_UA when running somewhere else.
 UA = os.environ.get(
     "EPRINT_UA",
-    "Claude-User (eprint publication-info viewer)")
+    "eprint-venue/1.0 (+https://menghao303.github.io/eprint-venue/)")
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 # The archive sits behind Cloudflare rate limiting, so one request at a time,
@@ -27,7 +33,11 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 STATE = {"delay": 1.0, "last": 0.0}
 
 
-def get(url, retries=6):
+class RateLimited(Exception):
+    pass
+
+
+def get(url, retries=6, give_up_on_429=False):
     for attempt in range(retries):
         wait = STATE["delay"] - (time.time() - STATE["last"])
         if wait > 0:
@@ -40,6 +50,8 @@ def get(url, retries=6):
         except urllib.error.HTTPError as e:
             if e.code == 404:
                 return None
+            if e.code == 429 and give_up_on_429:
+                raise RateLimited() from None
             if e.code == 429:
                 pause = int(e.headers.get("Retry-After") or 0) or 60 * (attempt + 1)
                 STATE["delay"] = min(STATE["delay"] + 0.25, 5.0)
@@ -180,6 +192,168 @@ def parse_paper(pid, page):
     }
 
 
+# --- RSS + API -------------------------------------------------------------
+
+FEED_STATE = os.path.join(DATA_DIR, "feed.json")
+API_IACR = {"ASIACRYPT", "CRYPTO", "CIC", "EUROCRYPT", "PKC", "TCC", "TOSC",
+            "TCHES", "JOC", "FSE", "CHES", "OTHER_IACR"}
+
+
+def read_feed():
+    """Return the feed's paper ids, most recently added or revised first.
+
+    The feed carries the last 100 papers eprint touched, in every year, and
+    no "last updated" date, only the date of first submission.
+    """
+    page = get(f"{BASE}/rss/rss.xml")
+    if not page:
+        raise SystemExit("could not read the RSS feed")
+    return [item.findtext("link").split("eprint.iacr.org/", 1)[1]
+            for item in ET.fromstring(page).iter("item")]
+
+
+def moved(now, before):
+    """How many ids at the top of `now` are new or revised since `before`.
+
+    Untouched papers keep their order and are only pushed down, and a
+    revision lifts a paper to the top, so the untouched part of `now` is
+    `before` minus the lifted papers. The smallest k for which the tail
+    of `now` from k on is exactly that is the number that moved.
+    """
+    for k in range(len(now)):
+        top = set(now[:k])
+        rest = [p for p in before if p not in top]
+        if now[k:] == rest[:len(now) - k]:
+            return k
+    return len(now)
+
+
+def pubinfo_from_api(pt):
+    """Spell the API's structured publication type the way the paper page
+    does, so classify.py reads both the same way."""
+    kind = pt.get("pubtype", "")
+    rev = (pt.get("revisiontype") or "SAME").lower()
+    note = (pt.get("note") or "").strip()
+    if kind == "PREPRINT":
+        return "Preprint." + ("" if rev == "same" else f" {rev.capitalize()} revision.")
+    if kind in API_IACR:
+        venue = note if kind == "OTHER_IACR" else \
+            " ".join(str(x) for x in (kind, pt.get("year")) if x)
+        venue = venue or "an IACR venue"
+        if rev == "same":
+            return f"Published by the IACR in {venue}"
+        return f"A {rev} revision of an IACR publication in {venue}"
+    text = "Published elsewhere."
+    if rev != "same":
+        text += f" {rev.capitalize()} revision."
+    return f"{text} {note}".strip()
+
+
+def paper_from_api(pid, d):
+    history = [f"{h['when'][:10]}: {h['action']}" for h in d.get("history", [])]
+    received = revised = ""
+    for h in d.get("history", []):
+        if h["action"] == "received":
+            received = h["when"][:10]
+        elif not revised:
+            revised = h["when"][:10]
+    doi = d.get("DOI") or ""
+    return {
+        "id": pid,
+        "title": d.get("title", ""),
+        "authors": [a.get("fullName", "") for a in d.get("authors", [])],
+        "category": d.get("category", ""),
+        "pubinfo": pubinfo_from_api(d.get("pubtype") or {}),
+        "doi": f"https://doi.org/{doi}" if doi else "",
+        "keywords": d.get("keywords", []),
+        "abstract": d.get("abstract", ""),
+        "received": received,
+        "revised": revised,
+        "history": history,
+        "updated": max((h["when"][:10] for h in d.get("history", [])), default=""),
+        "pubtype": d.get("pubtype") or {},
+    }
+
+
+def refresh_from_feed(years, limit):
+    """Fetch, through the API, every paper of `years` that the feed shows as
+    new or revised since the previous run. Returns nothing; each year's file
+    is rewritten only if one of its papers changed.
+
+    The API allows 100 requests a day, so a run stops at `limit` (or at the
+    first 429) and leaves the rest in data/feed.json for the next run.
+    """
+    key = os.environ.get("EPRINT_API_KEY")
+    if not key:
+        raise SystemExit("--feed needs the API key in EPRINT_API_KEY")
+    state = {"ids": [], "pending": []}
+    if os.path.exists(FEED_STATE):
+        with open(FEED_STATE) as f:
+            state = json.load(f)
+
+    now = read_feed()
+    n = moved(now, state["ids"])
+    if state["ids"] and n == len(now):
+        print(f"warning: all {n} feed entries are new, so more may have changed "
+              f"than the feed still shows; a full listing scan "
+              f"(python3 scrape.py) would catch those")
+    kept = tuple(f"{y}/" for y in years)
+    todo = list(dict.fromkeys(
+        [p for p in now[:n] if p.startswith(kept)] +
+        [p for p in state["pending"] if p.startswith(kept)]))
+    print(f"feed: {n} of {len(now)} entries moved; "
+          f"{len(todo)} papers of {', '.join(map(str, years))} to fetch")
+
+    caches = {}
+    for y in years:
+        path = os.path.join(DATA_DIR, f"{y}.json")
+        if os.path.exists(path):
+            with open(path) as f:
+                caches[y] = {p["id"]: p for p in json.load(f)["papers"]}
+        else:
+            caches[y] = {}
+
+    done, touched = [], set()
+    try:
+        for pid in todo[:limit or None]:
+            page = get(f"{BASE}/api/1.0/{pid}?auth={key}", give_up_on_429=True)
+            done.append(pid)
+            if not page:
+                continue
+            d = json.loads(page)
+            if d.get("status") not in (None, "approved"):
+                continue
+            y = int(pid.split("/")[0])
+            caches[y][pid] = paper_from_api(pid, d)
+            touched.add(y)
+            sys.stderr.write(f"\r  fetched {len(done)}/{len(todo)} ({pid})   ")
+            sys.stderr.flush()
+    except RateLimited:
+        print("\nAPI rate limit reached; the rest is left for the next run")
+    if done:
+        sys.stderr.write("\n")
+
+    for y in sorted(touched):
+        path = os.path.join(DATA_DIR, f"{y}.json")
+        papers = sorted(caches[y].values(),
+                        key=lambda p: int(p["id"].split("/")[1]), reverse=True)
+        with open(path, "w") as f:
+            json.dump({"year": y,
+                       "fetched": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                       "count": len(papers),
+                       "papers": papers}, f, ensure_ascii=False)
+        print(f"Wrote {path} ({len(papers)} papers)")
+
+    pending = [p for p in todo if p not in done]
+    if pending:
+        print(f"{len(pending)} papers left for the next run")
+    new_state = {"ids": now, "pending": pending}
+    if new_state != state:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(FEED_STATE, "w") as f:
+            json.dump(new_state, f, indent=0)
+
+
 def scrape_year(year, force=False, limit=0, ids=None):
     """Refresh data/<year>.json.
 
@@ -274,9 +448,15 @@ if __name__ == "__main__":
                     help="take the changed papers from /days/DAYS (a single "
                          "request) instead of scanning the year listing; "
                          "data files with nothing new are not rewritten")
+    ap.add_argument("--feed", action="store_true",
+                    help="take what changed from the RSS feed and fetch it "
+                         "through the JSON API (needs EPRINT_API_KEY)")
     a = ap.parse_args()
     STATE["delay"] = a.delay
     years = a.years or ["2026"]
+    if a.feed:
+        refresh_from_feed([int(y) for y in years], a.limit)
+        sys.exit()
     recent = list_recent(a.recent) if a.recent else None
     for y in years:
         ids = None

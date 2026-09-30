@@ -1,18 +1,12 @@
 name: Refresh and deploy
 
 on:
-  # Paused 2026-09-29: eprint.iacr.org started answering this job with a
-  # Cloudflare 403 aimed at its User-Agent. The schedule and the push trigger
-  # (which also fetches) stay off until the archive's maintainers say how, and
-  # how often, we may read it. Run by hand only.
-  #
-  # Once they agree, uncomment one daily run at 00:07 UTC (08:07 Singapore);
-  # off the hour, because GitHub's scheduler is most congested at :00.
-  #
-  # schedule:
-  #   - cron: "7 0 * * *"
-  # push:
-  #   branches: [main]
+  # Once a day, as the archive's maintainer suggested: the RSS feed says what
+  # changed, the JSON API (100 requests a day) supplies each paper. 00:07 UTC
+  # (08:07 Singapore), off the hour because GitHub's scheduler is most
+  # congested at :00. No push trigger: every run spends API requests.
+  schedule:
+    - cron: "7 0 * * *"
   workflow_dispatch:
 
 permissions:
@@ -25,9 +19,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # The archive blocks this exact string (see `on:` above). Leave it alone and
-  # change it only if the maintainers ask for a different one.
-  EPRINT_UA: "eprint-venue/1.0 (+https://github.com/MengHao303/eprint-venue) hourly metadata refresh"
+  # The maintainer asked for a User-Agent that points to this site.
+  EPRINT_UA: "eprint-venue/1.0 (+https://menghao303.github.io/eprint-venue/) daily metadata refresh"
 
 jobs:
   refresh:
@@ -44,24 +37,16 @@ jobs:
 
       - name: Fetch new and changed papers
         id: fetch
-        # --max keeps a single run small if a backlog builds up; the rest is
-        # picked up by the next run.
+        env:
+          EPRINT_API_KEY: ${{ secrets.EPRINT_API_KEY }}
+        # A typical day is 10-20 API requests. --max 80 leaves headroom under
+        # the 100-a-day limit for a manual run; anything over it is kept in
+        # data/feed.json and fetched by the next run.
         run: |
-          # A daily run reads /days/3, which still covers one day that GitHub
-          # dropped. Once the data is more than 60 h old (a longer outage,
-          # a quiet stretch in which nothing was rewritten, or a fresh clone),
-          # only the full year listing can say what moved.
-          AGE=$(python3 -c "import calendar, json, time; print(int(time.time() - calendar.timegm(time.strptime(json.load(open('data/2026.json'))['fetched'], '%Y-%m-%dT%H:%M:%SZ'))))" 2>/dev/null || echo 999999)
-          if [ "$AGE" -gt 216000 ]; then
-            echo "full year listing (data is ${AGE}s old)"
-            python3 scrape.py 2026 --delay 1.5 --max 300
-          else
-            echo "probe (data is ${AGE}s old)"
-            python3 scrape.py 2026 --recent 3 --delay 1.5 --max 300
-          fi
-          # A probe that found nothing rewrote no file, so git is the
-          # signal: nothing to rebuild, commit or deploy. A push or a manual
-          # run always deploys, because the page itself may have changed.
+          python3 scrape.py 2026 --feed --max 80
+          # A day in which nothing moved rewrote no file, so git is the
+          # signal: nothing to rebuild, commit or deploy. A manual run
+          # always deploys, because the page itself may have changed.
           if [ "${{ github.event_name }}" = "schedule" ] && git diff --quiet -- data; then
             echo "eprint has nothing new; skipping the rebuild and deploy"
             echo "changed=false" >> "$GITHUB_OUTPUT"

@@ -15,6 +15,7 @@ its publication info in the row, and filters for venue, publication status and c
 | File | Purpose |
 | --- | --- |
 | `scrape.py` | Fetches paper metadata from eprint.iacr.org into `data/<year>.json` |
+| `data/feed.json` | The RSS feed as the last `--feed` run saw it, plus papers still to fetch |
 | `classify.py` | Turns the free-text publication info into a status + venue |
 | `venues.py` | Folds venue spellings onto one name (`CCS`, `ACM-CCS`, `ACM SIGSAC Conference on…` → `ACM CCS`) |
 | `build.py` | Renders `data/*.json` + `template.html` into `site/index.html` |
@@ -28,6 +29,7 @@ its publication info in the row, and filters for venue, publication status and c
 ./update.sh              # refresh 2026 and rebuild the site
 ./update.sh 2024 2025 2026   # several years in one page
 RECENT=2 ./update.sh     # only what eprint touched in the last 2 days (1 request)
+FEED=1 ./update.sh       # RSS + JSON API, as CI does (needs EPRINT_API_KEY)
 FORCE=1 ./update.sh      # ignore the cache and re-fetch everything
 open site/index.html     # self-contained, no server needed
 ```
@@ -70,52 +72,43 @@ an empty hour from a busy one.
 
 ## Automatic updates
 
-> **Paused since 2026-09-29.** eprint.iacr.org answers this workflow's User-Agent with a
-> Cloudflare 403, so the schedule and the push trigger are commented out and the site
-> keeps its last snapshot (2026-09-27). The daily setup below is ready but stays off until
-> the archive's maintainers agree to it; nothing here should be changed to get past the
-> block.
+The archive's maintainer (Kevin McCurley) asked us, on 2026-09-30, to keep up through
+the RSS feed and eprint's JSON API instead of scraping HTML, and gave us an API key.
+That is `scrape.py --feed`, which CI runs **once a day** at 00:07 UTC (08:07 Singapore):
 
-`.github/workflows/update.yml` is set up for **one run a day**, at 00:07 UTC (08:07
-Singapore time):
+1. read `https://eprint.iacr.org/rss/rss.xml`, the last 100 papers eprint added or
+   revised (all years, newest change first; about six days' worth);
+2. compare it with the feed the previous run saw (`data/feed.json`). A revision lifts a
+   paper to the top and untouched papers only slide down, so the papers above the
+   untouched tail are exactly the ones that moved — including one revised twice;
+3. fetch each moved paper of a kept year from `https://eprint.iacr.org/api/1.0/<id>`.
 
-- normally a probe: two requests — `/days/3` for what was revised, and the first page
-  of the year listing for what was just published — and then only the paper pages that
-  actually moved. Three days rather than one, so a day that GitHub's scheduler drops is
-  still covered by the next run. A day in which eprint did not move writes no file, and
-  the run stops before the rebuild, the commit and the deploy.
-- the full year listing instead, whenever the probe's count says its view is incomplete,
-  or whenever `data/2026.json` is more than 60 hours old — a longer outage, a quiet
-  stretch in which nothing was rewritten, or a missing file on a fresh clone.
-
-A run that has work to do (and every manual run) then rebuilds `site/index.html`, commits the refreshed `data/2026.json` back to the repository, and
-deploys `site/` to GitHub Pages. `--max 300` caps the paper pages of a single run, so a
-backlog is worked off over several runs instead of hammering the archive.
-
-The committed JSON is what makes this cheap: the expensive first pass over a whole year
-is done once, locally, and CI only ever fetches the delta. You can also trigger a run by
-hand from the Actions tab (`Run workflow`).
+The API returns the publication type as structured fields (`pubtype`: `PREPRINT`,
+`OTHER`, `CRYPTO`, `TCHES`, …; `revisiontype`: `SAME`/`MINOR`/`MAJOR`; a free-text
+`note`; the venue `year`; a `DOI`). `scrape.py` spells them the way the paper page does
+(`A major revision of an IACR publication in CRYPTO 2026`), so `classify.py` and the page
+treat both sources alike; the raw fields are kept in each record's `pubtype`.
 
 A few things to know:
 
-- eprint offers nothing to push *at* a machine: no webhook. What it offers a reader is
-  RSS/Atom, OAI-PMH, and IACR's email alerts (which do reach subscribers on every
-  update). An email could be relayed into a `repository_dispatch` to cut the lag from
-  a day to a few minutes, but that means a mail-to-webhook hop that fails
-  silently, so this repository polls `/days` instead.
-- GitHub's cron is not punctual, and on a free public repository it is not even
-  dependable: runs arrive tens of minutes to hours late, and individual slots are
-  dropped. Expect a run to arrive late now and then, and the odd day to be skipped.
-  Reliable cadence would need an outside trigger (a cron service calling
-  `workflow_dispatch`, or a local scheduler), which is deliberately not set up here.
-- GitHub disables scheduled workflows in repositories with no activity for 60 days. The
-  data commits normally count as activity, but if the schedule ever goes quiet, re-enable
-  it from the Actions tab.
-- CI identifies itself through `EPRINT_UA`, which names this repository, so the archive's
-  operators can see who is fetching and get in touch. If eprint.iacr.org ever rate-limits
-  or blocks CI, the workflow fails loudly and the deployed site simply keeps the last
-  good snapshot. That is what happened in September 2026 (see the note at the top of
-  this section).
+- **Rate limit: 100 API requests a day.** A normal day is 10–20. A run stops at
+  `--max 80` or at the first `429`, and leaves what it did not fetch in
+  `data/feed.json` for the next run.
+- **The key is a secret.** CI reads it from the repository secret `EPRINT_API_KEY`;
+  locally, export it in your shell. Never commit it.
+- If more than 100 papers changed between two runs (GitHub skipped several days), the
+  feed no longer reaches back far enough and the run says so. A full listing scan run
+  locally (`./update.sh`) catches up; that is the HTML path, so keep it rare.
+- A day in which nothing moved writes no file, and the run stops before the rebuild,
+  commit and deploy.
+- GitHub's cron runs late and occasionally skips a day; the feed covers about six days,
+  so a skipped day is caught up by the next run. GitHub also disables schedules in
+  repositories with no activity for 60 days — re-enable from the Actions tab if needed.
+- Requests carry `EPRINT_UA`, which points to this site, as the maintainer asked.
+
+The HTML path (`./update.sh`, `RECENT=N`) is still there for a first pass over a new
+year. Between 2026-09-27 and 2026-09-30 the schedule was off, after eprint's Cloudflare
+answered the old HTML scraper with a 403.
 
 ## Fetching politely
 
