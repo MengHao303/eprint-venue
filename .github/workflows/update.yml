@@ -20,7 +20,7 @@ concurrency:
 
 env:
   # The maintainer asked for a User-Agent that points to this site.
-  EPRINT_UA: "eprint-venue/1.0 (+https://menghao303.github.io/eprint-venue/) daily metadata refresh"
+  EPRINT_UA: "eprint-venue/1.0 (+https://menghao303.github.io/eprint-venue/) daily refresh"
 
 jobs:
   refresh:

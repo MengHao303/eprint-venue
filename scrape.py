@@ -60,6 +60,12 @@ def get(url, retries=6, give_up_on_429=False):
                 time.sleep(pause)
                 continue
             if attempt == retries - 1:
+                # Leave enough in the log to tell which layer answered.
+                sys.stderr.write(f"\n  HTTP {e.code} at "
+                                 f"{time.strftime('%FT%TZ', time.gmtime())} "
+                                 f"for {url.split('?')[0]}\n")
+                for k, v in e.headers.items():
+                    sys.stderr.write(f"  < {k}: {v}\n")
                 raise
         except Exception:
             if attempt == retries - 1:
