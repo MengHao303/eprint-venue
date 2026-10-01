@@ -4,6 +4,7 @@ import base64
 import datetime
 import json
 import os
+import re
 import sys
 import time
 
@@ -45,7 +46,10 @@ def stylesheet():
 
 
 def load(years=None):
-    files = sorted(f for f in os.listdir(DATA_DIR) if f.endswith(".json"))
+    # One file per year (2026.json); feed.json beside them is scrape.py's
+    # record of the RSS feed, not papers.
+    files = sorted(f for f in os.listdir(DATA_DIR)
+                   if re.fullmatch(r"\d{4}\.json", f))
     if years:
         files = [f for f in files if f[:-5] in years]
     papers, fetched = [], ""
