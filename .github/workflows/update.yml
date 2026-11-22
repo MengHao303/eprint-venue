@@ -25,9 +25,8 @@ env:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+    outputs:
+      changed: ${{ steps.fetch.outputs.changed }}
     steps:
       - uses: actions/checkout@v4
 
@@ -70,11 +69,23 @@ jobs:
       - uses: actions/configure-pages@v5
         if: steps.fetch.outputs.changed == 'true'
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         if: steps.fetch.outputs.changed == 'true'
         with:
           path: site
 
+  # Deploy in a separate job. In the same job, deploy-pages can list the
+  # run's artifacts a fraction of a second after the upload finalized and
+  # find none ("No artifacts named github-pages"), which failed the runs of
+  # 2026-11-21 and -22 (actions/deploy-pages#451). A second job starts
+  # seconds later, by which time the artifact is listed.
+  deploy:
+    needs: refresh
+    if: needs.refresh.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
       - id: deploy
-        if: steps.fetch.outputs.changed == 'true'
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
